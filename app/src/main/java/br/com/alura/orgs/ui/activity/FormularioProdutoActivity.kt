@@ -14,7 +14,11 @@ class FormularioProdutoActivity : AppCompatActivity() {
     private val binding by lazy {
         ActivityFormularioProdutoBinding.inflate(layoutInflater)
     }
+    private val dao by lazy {
+        AppDatabase.instancia(this).produtoDao()
+    }
     private var url: String? = null
+    private var produtoId = 0L
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -28,6 +32,31 @@ class FormularioProdutoActivity : AppCompatActivity() {
                     binding.activityFormularioProdutoImagem.tentaCarregarImagem(url)
                 }
         }
+        tentaCarregarProduto()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        tentaBuscarProdutos()
+    }
+
+    private fun tentaBuscarProdutos() {
+        dao.buscaProdutoPorId(produtoId)?.let {
+            title = "Alterar produto"
+            preencheCampos(it)
+        }
+    }
+
+    private fun tentaCarregarProduto() {
+        produtoId = intent.getLongExtra(CHAVE_PRODUTO_ID, 0L)
+    }
+
+    private fun preencheCampos(produtoCarregado: Produto) {
+        url = produtoCarregado.imagem
+        binding.activityFormularioProdutoImagem.tentaCarregarImagem(produtoCarregado.imagem)
+        binding.activityFormularioProdutoNome.setText(produtoCarregado.nome)
+        binding.activityFormularioProdutoDescricao.setText(produtoCarregado.descricao)
+        binding.activityFormularioProdutoValor.setText(produtoCarregado.valor.toPlainString())
     }
 
     private fun configuraBotaoSalvar() {
@@ -38,6 +67,11 @@ class FormularioProdutoActivity : AppCompatActivity() {
         botaoSalvar.setOnClickListener {
             val produtoNovo = criaProduto()
             dao.salvaProduto(produtoNovo)
+//            if (produtoId > 0){
+//                dao.atualizaProduto(produtoNovo)
+//            }else{
+//                dao.salvaProduto(produtoNovo)
+//            }
             finish()
         }
     }
@@ -56,7 +90,7 @@ class FormularioProdutoActivity : AppCompatActivity() {
         }
 
         return Produto(
-            id = 0,
+            id = produtoId,
             nome = nome,
             descricao = descricao,
             valor = valor,

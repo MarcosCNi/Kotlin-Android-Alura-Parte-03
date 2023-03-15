@@ -1,5 +1,6 @@
 package br.com.alura.orgs.ui.activity
 
+import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
@@ -7,13 +8,20 @@ import android.view.Menu
 import android.view.MenuItem
 import br.com.alura.orgs.R
 import br.com.alura.orgs.databinding.ActivityDetalhesProdutoBinding
+import br.com.alura.orgs.db.AppDatabase
 import br.com.alura.orgs.extensions.formataParaMoedaBrasileira
 import br.com.alura.orgs.extensions.tentaCarregarImagem
 import br.com.alura.orgs.model.Produto
 
-private const val TAG = "DetalhesProduto"
 
 class DetalhesProdutoActivity : AppCompatActivity() {
+
+    private var produtoId: Long = 0L
+    private var produto: Produto? = null
+
+    private val dao by lazy {
+        AppDatabase.instancia(this).produtoDao()
+    }
 
     private val binding by lazy {
         ActivityDetalhesProdutoBinding.inflate(layoutInflater)
@@ -25,6 +33,18 @@ class DetalhesProdutoActivity : AppCompatActivity() {
         tentaCarregarProduto()
     }
 
+    override fun onResume() {
+        super.onResume()
+        buscaProduto()
+    }
+
+    private fun buscaProduto() {
+        produto = dao.buscaProdutoPorId(produtoId)
+        produto?.let { produto ->
+            preencheCampos(produto)
+        } ?: finish()
+    }
+
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         menuInflater.inflate(R.menu.menu_detalhes, menu)
         return super.onCreateOptionsMenu(menu)
@@ -33,19 +53,24 @@ class DetalhesProdutoActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.menu_detalhes_editar_produto -> {
-                Log.i(TAG, "onOptionsItemSelected: Editar")
+                Intent(this, FormularioProdutoActivity::class.java).apply {
+                    putExtra(CHAVE_PRODUTO_ID, produtoId)
+                    startActivity(this )
+                }
             }
             R.id.menu_detalhes_remover_produto -> {
-                Log.i(TAG, "onOptionsItemSelected: Remover")}
+                produto?.let {
+                    dao.removeProduto(it)
+                    finish()
+                }
+            }
             else -> {}
         }
         return super.onOptionsItemSelected(item)
     }
 
     private fun tentaCarregarProduto() {
-        intent.getParcelableExtra<Produto>(CHAVE_PRODUTO)?.let { produtoCarregado ->
-            preencheCampos(produtoCarregado)
-        } ?: finish()
+        produtoId = intent.getLongExtra(CHAVE_PRODUTO_ID, 0L)
     }
 
     private fun preencheCampos(produtoCarregado: Produto) {

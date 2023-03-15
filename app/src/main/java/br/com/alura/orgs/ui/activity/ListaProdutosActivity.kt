@@ -41,6 +41,7 @@ class ListaProdutosActivity : AppCompatActivity() {
     }
 
     private fun configuraRecyclerView() {
+        val dao = AppDatabase.instancia(this).produtoDao()
         val recyclerView = binding.activityListaProdutosRecyclerView
         recyclerView.adapter = adapter
         adapter.quandoClicaNoItem = {
@@ -48,7 +49,7 @@ class ListaProdutosActivity : AppCompatActivity() {
                 this,
                 DetalhesProdutoActivity::class.java
             ).apply {
-                putExtra(CHAVE_PRODUTO, it)
+                putExtra(CHAVE_PRODUTO_ID, it.id)
             }
             startActivity(intent)
         }
@@ -56,7 +57,8 @@ class ListaProdutosActivity : AppCompatActivity() {
 
         }
         adapter.quandoClicaEmRemover = {
-
+            dao.removeProduto(it)
+            recreate()
         }
     }
 
